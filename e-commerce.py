@@ -9,12 +9,12 @@ firebase_admin.initialize_app(cred)
 # Initialize Firestore client
 db = firestore.client()
 
-# Function to add data into Firestore
+# Function to add a product under a specific category's subcollection
 def add_product_to_category(category_name, product_id, name, price, stock):
-    # Reference to the category subcollection within the products collection
-    category_ref = db.collection('products').document(category_name).collection('category').document('product_id')
-    #Set product details under the category subcollection
-    category_ref.set({
+    # Reference to the 'items' subcollection within the specific category document in the 'products' collection
+    product_ref = db.collection('products').document(category_name).collection('items').document(product_id)
+    #Set product details under the 'items' subcollection
+    product_ref.set({
         'name': name,
         'price': price,
         'stock': stock
