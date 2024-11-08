@@ -2,7 +2,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # Initialize Firebase Admin SDK with my Service Account File
-cred = credentials.Certificate("/Users/zhangying-macbookpro/Documents/BYU-Pathway/BYU_Idaho/fall 2024/cse310/jianjun-furniture-store-firebase-adminsdk-dja2z-033eeb3f54.json")
+cred = credentials.Certificate("/Users/zhangying-macbookpro/Documents/BYU-Pathway/BYU_Idaho/fall 2024/cse310/jianjun-furniture-store-firebase-adminsdk-dja2z-de227bea56.json")
 
 firebase_admin.initialize_app(cred)
 
@@ -34,25 +34,136 @@ def merge_field_user(user_id):
         'new_user': True}, merge=True)
     print(f'{user_id} is added as new_user successfully!')
 
+def list_top_level_collections():
+    try:
+        collections = db.collections()
+        print("Top-level collections:")
+        for collection in collections:
+            print(collection.id)
+    except Exception as e:
+        print(f"Error fetching top-level collections: {e}")
+def list_documents_in_products():
+    try:
+        categories = db.collection('products').get()
+        if not categories:
+            print("No documents found in 'products' collection.")
+        else:
+            print("Documents in 'products' collection:")
+            for category in categories:
+                print(f" - {category.id}")
+    except Exception as e:
+        print(f"Error listing documents in 'products' collection: {e}")
+def check_items_subcollections():
+    try:
+        categories = db.collection('products').get()
+        for category in categories:
+            category_name = category.id
+            print(f"Checking 'items' sub-collection in category '{category_name}'...")
+            
+            # Try fetching items in this category's 'items' sub-collection
+            items = db.collection('products').document(category_name).collection('items').get()
+            if not items:
+                print(f"No items found in 'items' sub-collection of '{category_name}'")
+            else:
+                print(f"Items in '{category_name}':")
+                for item in items:
+                    print(f" - {item.id}: {item.to_dict()}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
-# Function to retrieve all documents from a collection
-def get_products():
-    products = db.collection('products').stream()
-    for product in products:
-        print(f'{product.id} => {product.to_dict()}')
 
+
+
+
+
+
+
+# Function to retrieve all products in all categories with additional checks
+def get_all_products():
+    try:
+        print("Fetching categories from 'products' collection...")
+        
+        # Retrieve all category documents in the 'products' collection
+        categories = db.collection('products').get()
+        
+        # Check if categories were fetched
+        if not categories:
+            print("No categories found.")
+            return []
+
+        all_products = []  # List to store all products across all categories
+
+        # Loop through each category document
+        for category in categories:
+            category_name = category.id
+            print(f"Retrieving products for category '{category_name}'...")
+
+            # Check if the category has an 'items' sub-collection
+            items_ref = db.collection('products').document(category_name).collection('items')
+            items = items_ref.get()
+
+            # If no items are found, skip this category
+            if not items:
+                print(f"No items found for category '{category_name}' or 'items' sub-collection missing.")
+                continue
+            
+            # Collect all items under this category
+            for item in items:
+                product_data = item.to_dict()
+                product_data["category"] = category_name  # Add category name to product data
+                product_data["id"] = item.id              # Add item ID to product data
+                all_products.append(product_data)
+                print(f" - Product ID: {item.id}, Data: {product_data}")
+        
+        print("All products retrieved successfully.")
+        return all_products  # Return a list of all products across all categories
+    
+    except Exception as e:
+        print(f"An error occurred while retrieving all products: {e}")
+        return []
+
+# Function to retrieve all products within a specific category
+def get_products_in_category(category_name):
+    try:
+        # Access the 'items' sub-collection within the specified category
+        items = db.collection('products').document(category_name).collection('items').get()
+        
+        # Check if any items are found
+        if not items:
+            print(f"No items found for category '{category_name}'")
+            return []
+
+        # Print and collect all items in this category
+        print(f"Products in category '{category_name}':")
+        product_list = []
+        for item in items:
+            product_data = item.to_dict()
+            product_list.append({"id": item.id, **product_data})
+            print(f" - {item.id}: {product_data}")
+        
+        return product_list  # Return the list of products in the category
+    
+    except Exception as e:
+        print(f"An error occurred while retrieving products in category '{category_name}': {e}")
+        return []
+
+# Function to retrieve single document data from Firestore
+def get_product(category_name, item_id):
+    try:
+        doc = db.collection('products').document(category_name).collection('items').document(item_id).get()
+        if doc.exists:
+            print(f"{category_name} - {item_id}: {doc.to_dict()}")
+        else:
+            print(f"Product {item_id} does not exist!")
+    except Exception as e:
+        print(f"An error occured: {e}")
+
+
+# Function to retrieve all users from a collection
 def get_users():
     users = db.collection('users').stream()
     for user in users:
         print(f'{user.id} => {user.to_dict()}')
-
-# Function to retrieve single document data from Firestore
-def get_product():
-    p001 = db.collection('products').document('P001').get()
-    if p001.exists:
-        print(f"P001: {p001.to_dict()}")
-    else:
-        print("Product does not exist!")
 
 #Funciton to filter a collection
 def filter_products():
@@ -107,6 +218,34 @@ def delete_product_from_category(category_name, product_id):
     product_ref.delete()
     print(f'Product {product_id} from {category_name} category deleted successfully!')
 
+#test
+# Test fetching a single known document
+def test_retrieve_known_category():
+    try:
+        # Replace 'living_room' with an actual category document ID
+        category_id = "living_room"
+        doc = db.collection('products').document(category_id).get()
+        if doc.exists:
+            print(f"Document '{category_id}' found:", doc.to_dict())
+        else:
+            print(f"Document '{category_id}' not found.")
+    except Exception as e:
+        print(f"Error retrieving document '{category_id}': {e}")
+
+# Test listing all documents again after fetching one directly
+def list_documents_in_products():
+    try:
+        categories = db.collection('products').get()
+        if not categories:
+            print("No documents found in 'products' collection.")
+        else:
+            print("Documents in 'products' collection:")
+            for category in categories:
+                print(f" - {category.id}")
+    except Exception as e:
+        print(f"Error listing documents in 'products' collection: {e}")
+
+
 # Example usage
 if __name__ == '__main__':
 # Adding products to Firestore with their respective categories
@@ -149,6 +288,7 @@ if __name__ == '__main__':
     # add_product_to_category("bathroom", "bt4", "Storage Cabinet", 150, 6)
     # add_product_to_category("bathroom", "bt5", "Towel Set", 35, 50)  
     # print('-' * 50)  # Horizontal line
+
     # add_user('U001', 'Alice', 'alice@example.com')
     # add_user('U002', 'Sam', 'sam@gmail.com')
     # add_user('U003', 'Alex', 'alex@hotmail.com')
@@ -159,15 +299,24 @@ if __name__ == '__main__':
     # order products data by price and stock descending
     # order_products()
     # print("\nProducts:")
-    # get_products()
+    # get_product("living_room", "lr1")
+    # get_products_in_category("living_room")
+    # list_top_level_collections()
+    # list_documents_in_products()
+    # check_items_subcollections()
+    # Run both functions
+    test_retrieve_known_category()
+    list_documents_in_products()
+
+    # get_all_products()
     # print("\nUsers:")
-    # get_users()
+    # get_users()   
 
     # Update data
     # Update only the price of the product
     # update_product_in_category("bathroom", "bt1", price=450)
     # Update all fields
-    update_product_in_category("bathroom", "bt1", name=" Luxury Bathroom Vanity", price=500, stock=5)
+    # update_product_in_category("bathroom", "bt1", name=" Luxury Bathroom Vanity", price=500, stock=5)
 
     # update_user('U001', {'name': 'Alice Smith'})
 
