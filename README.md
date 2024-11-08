@@ -1,6 +1,6 @@
 # Overview
 
-This software is an e-commerce platform that integrates with a cloud database (Firestore) to manage product listings and user accounts. The platform enables CRUD operations, demonstrating cloud database capabilities in a real-world application.
+This software is an e-commerce platform that integrates with a cloud database (Firestore) to manage product listings and customer accounts. The platform enables CRUD operations, demonstrating cloud database capabilities in a real-world application.
 
 The purpose of this software is to gain hands-on experience with cloud databases, particularly Firestore, and to implement basic functionalities like data insertion, retrieval, modification, and deletion.
 
@@ -9,7 +9,7 @@ The purpose of this software is to gain hands-on experience with cloud databases
 # Cloud Database
 
 The cloud database used is Google Firestore. 
-It stores two collections: 'products' and 'users'. The 'products' collection stores product details such as ID, name, price, and stock, while the 'users' collection stores user information like ID, name, and email.
+It stores two collections: 'products' and 'customers'. The 'products' collection stores product details such as ID, name, price, and stock, while the 'customers' collection stores customer information like ID, name, and email.
 
 # Development Environment
 
@@ -24,6 +24,6 @@ The software was developed using:
 
 # Future Work
 
-- Implement user authentication for secure login and registration.
+- Implement customer authentication for secure login and registration.
 - Add real-time notifications for data changes using Firestore triggers.
 - Create a frontend interface using a framework like Flask or Django.
