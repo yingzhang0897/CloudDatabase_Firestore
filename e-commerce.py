@@ -36,19 +36,23 @@ def add_product_to_category(category_name, product_id, name, price, stock):
         'stock': stock
     })
     print(f'Product: {name} - ID: {product_id} - Price: {price} - Stock: {stock} added to {category_name}  successfully!')
+    print("-" * 30)
 
+# Function to add a customer
 def add_customer(customer_id, name, email):
     db.collection('customers').document(customer_id).set({
         'name': name,
         'email': email
     })
     print(f'customer {name} added successfully!')
+    print("-" * 30)
 
 # merge new fields into existing document
 def merge_field_customer(customer_id):
     db.collection('customers').document(customer_id).set({
         'new_customer': True}, merge=True)
     print(f'{customer_id} is added as new_customer successfully!')
+    print("-" * 30)
 
 
 # Function to retrieve all products in all categories with additional checks
@@ -83,12 +87,11 @@ def get_all_products():
             # Collect all items under this category
             for item in items:
                 product_data = item.to_dict()
-                product_data["category"] = category_name  # Add category name to product data
-                product_data["id"] = item.id              # Add item ID to product data
                 all_products.append(product_data)
-                print(f" - Product ID: {item.id}, Data: {product_data}")
+                print(f" -  {item.id}: {product_data}")
         
         print("All products retrieved successfully.")
+        print("-" * 30)
         return all_products  # Return a list of all products across all categories
     
     except Exception as e:
@@ -113,7 +116,8 @@ def get_products_in_category(category_name):
             product_data = item.to_dict()
             product_list.append({"id": item.id, **product_data})
             print(f" - {item.id}: {product_data}")
-        
+            print("-" * 30)
+
         return product_list  # Return the list of products in the category
     
     except Exception as e:
@@ -126,6 +130,7 @@ def get_product(category_name, item_id):
         doc = db.collection('products').document(category_name).collection('items').document(item_id).get()
         if doc.exists:
             print(f"{category_name} - {item_id}: {doc.to_dict()}")
+            print("-" * 30)
         else:
             print(f"Product {item_id} does not exist!")
     except Exception as e:
@@ -134,24 +139,29 @@ def get_product(category_name, item_id):
 
 # Function to retrieve all customers from a collection
 def get_customers():
-    customers = db.collection('customers').stream()
+    customers = db.collection('customers').get()
     for customer in customers:
         print(f'{customer.id} => {customer.to_dict()}')
+        print("-" * 30)
 
-#Funciton to filter a collection
-def filter_products():
-    expensive_products = (
-        db.collection("products")
-        .where("price", ">=", 1000)  # Using the 'filter' keyword explicitly
-        .stream()
-    )
-    for ex in expensive_products:
-        print(f"{ex.id} => {ex.to_dict()}")
-#Function to order documents in a collection
-def order_products():
-    ordered_products = db.collection("products").order_by('price', direction = firestore.Query.DESCENDING).order_by('stock', direction = firestore.Query.DESCENDING).stream()
-    for product in ordered_products:
-        print(f'{product.id} => {product.to_dict()}')
+#Funciton to sorting products and limiting 10 in a Sub-Collection (items)
+def get_top_10_expensive_items():
+    try:
+        # Query the 'items' collection group directly
+        query = db.collection_group('items').order_by('price', direction=firestore.Query.DESCENDING).limit(10)
+        items = query.get()
+
+        print("Top 10 Most Expensive Items:")
+        for i, item in enumerate(items, start=1):
+            item_data = item.to_dict()
+            print(f"#{i}")
+            print(f"Item ID: {item.id}")
+            print(f"Name: {item_data.get('name')}")
+            print(f"Price: {item_data.get('price')}")
+            print(f"Stock: {item_data.get('stock')}")
+            print("-" * 30)
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 #update products data
 def update_product_in_category(category_name, product_id, name=None, price=None, stock=None):
@@ -171,18 +181,32 @@ def update_product_in_category(category_name, product_id, name=None, price=None,
     if updates:
         product_ref.update(updates)
         print(f'Product {product_id} in {category_name} category updated successfully!')
+        print("-" * 30)
     else:
         print("No updates provided.")
 
 #update customer data
-def update_customer(customer_id, updated_data):
-    db.collection('customers').document(customer_id).update(updated_data)
-    print(f'customer {customer_id} updated successfully!')
+def update_customer(customer_id, name=None, email=None):
+    # Prepare a dictionary with only the fields that need to be updated
+    updates = {}
+    if name is not None:
+        updates['name'] = name
+    if email is not None:
+        updates ['email'] = email
+
+    # Perform the update if there are fields to update
+    if updates:
+        db.collection('customers').document(customer_id).update(updates)
+        print(f"Customer {customer_id} updated successfully!")
+        print("-" * 30)
+    else:
+        print("No updates provided.")
 
 #delete customer data 
 def delete_customer(customer_id):
     db.collection('customers').document(customer_id).delete()
     print(f'customer {customer_id} is deleted successfully!')
+    print("-" * 30)
 
 #delete products data
 def delete_product_from_category(category_name, product_id):
@@ -190,7 +214,9 @@ def delete_product_from_category(category_name, product_id):
     product_ref = db.collection('products').document(category_name).collection('items').document(product_id)
     product_ref.delete()
     print(f'Product {product_id} from {category_name} category deleted successfully!')
+    print("-" * 30)
 
+    
 def register_out_of_stock():
 
 def main():
