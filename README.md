@@ -25,5 +25,4 @@ The software was developed using:
 # Future Work
 
 - Implement customer authentication for secure login and registration.
-- Add real-time notifications for data changes using Firestore triggers.
 - Create a frontend interface using a framework like Flask or Django.
