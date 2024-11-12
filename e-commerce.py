@@ -1,13 +1,18 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
 
+def initialize_firestore():
 # Initialize Firebase Admin SDK with my Service Account File
-cred = credentials.Certificate("/customers/zhangying-macbookpro/Documents/BYU-Pathway/BYU_Idaho/fall 2024/cse310/jianjun-furniture-store-firebase-adminsdk-dja2z-de227bea56.json")
+    cred = credentials.Certificate("/Users/zhangying-macbookpro/Documents/BYU-Pathway/BYU_Idaho/fall 2024/cse310/jianjun-furniture-store-firebase-adminsdk-dja2z-de227bea56.json")
 
-firebase_admin.initialize_app(cred)
+    firebase_admin.initialize_app(cred)
 
-# Initialize Firestore client
-db = firestore.client()
+    # Initialize Firestore client
+    db = firestore.client()
+    return db
+
+#This list is needed in product-related functions
+categories = ["living_room", "bedroom", "bathroom", "kitchen", "dining_room"]
 
 # let customer choose a category to add product
 def choose_category(categories):
@@ -26,7 +31,19 @@ def choose_category(categories):
             print("Please enter a valid number.")
 
 # Function to add a product under a specific category's subcollection
-def add_product_to_category(category_name, product_id, name, price, stock):
+def add_product_to_category(db):
+    print("It is ready for you to add some products data...")
+
+    #prompt user to type in parameters in order to add product data
+    category_name = choose_category(categories)
+    product_id = input(f"Enter producr ID: ")
+    name = input(f"Enter product name: ")
+    try:
+        price = float(input("Enter product price: "))
+        stock = int(input("Enter product stock: "))
+    except ValueError:
+        print("Invalid input! Make sure price is a number and stock is an integer.")
+
     # Reference to the 'items' subcollection within the specific category document in the 'products' collection
     product_ref = db.collection('products').document(category_name).collection('items').document(product_id)
     #Set product details under the 'items' subcollection
@@ -39,7 +56,13 @@ def add_product_to_category(category_name, product_id, name, price, stock):
     print("-" * 30)
 
 # Function to add a customer
-def add_customer(customer_id, name, email):
+def add_customer(db):
+    print("It is ready for you to add some customers data...")
+    #prompt user to type in parameters in order to add customer data
+    customer_id = input(f"Enter customer ID: ")
+    name = input(f"Enter customer name: ")
+    email = input(f"Enter customer email: ")
+
     db.collection('customers').document(customer_id).set({
         'name': name,
         'email': email
@@ -48,7 +71,10 @@ def add_customer(customer_id, name, email):
     print("-" * 30)
 
 # merge new fields into existing document
-def merge_field_customer(customer_id):
+def merge_new_customer(db):
+    print("This customer data is going to be merged...")
+    #prompt user to type in parameters in order to modify customer data
+    customer_id = input(f"Please verify customer ID: ")
     db.collection('customers').document(customer_id).set({
         'new_customer': True}, merge=True)
     print(f'{customer_id} is added as new_customer successfully!')
@@ -56,7 +82,7 @@ def merge_field_customer(customer_id):
 
 
 # Function to retrieve all products in all categories with additional checks
-def get_all_products():
+def get_all_products(db):
     try:
         print("Fetching categories from 'products' collection...")
         
@@ -99,7 +125,9 @@ def get_all_products():
         return []
 
 # Function to retrieve all products within a specific category
-def get_products_in_category(category_name):
+def get_products_in_category(db):
+    print("It is ready for you to get some products data from a category...")
+    category_name = choose_category(categories)
     try:
         # Access the 'items' sub-collection within the specified category
         items = db.collection('products').document(category_name).collection('items').get()
@@ -125,7 +153,11 @@ def get_products_in_category(category_name):
         return []
 
 # Function to retrieve single document data from Firestore
-def get_product(category_name, item_id):
+def get_product(db):
+    print("It is ready for you to get a product data...")
+    #prompt user to type in category_name and item_id to get a specific product data
+    category_name = choose_category(categories)
+    item_id = input(f"Enter producr ID: ")
     try:
         doc = db.collection('products').document(category_name).collection('items').document(item_id).get()
         if doc.exists:
@@ -138,18 +170,19 @@ def get_product(category_name, item_id):
 
 
 # Function to retrieve all customers from a collection
-def get_customers():
+def get_customers(db):
+    print("It is ready for you to get some customers data...")
     customers = db.collection('customers').get()
     for customer in customers:
         print(f'{customer.id} => {customer.to_dict()}')
         print("-" * 30)
 
 #Funciton to sorting products and limiting 10 in a Sub-Collection (items)
-def get_top_10_expensive_items():
+def get_top_10_expensive_items(db):
+    print("It is ready for you to get top-10 expensive product items data in all categories...")
     try:
         # Query the 'items' collection group directly
-        query = db.collection_group('items').order_by('price', direction=firestore.Query.DESCENDING).limit(10)
-        items = query.get()
+        items = db.collection_group('items').order_by('price', direction=firestore.Query.DESCENDING).limit(10).get()
 
         print("Top 10 Most Expensive Items:")
         for i, item in enumerate(items, start=1):
@@ -164,63 +197,131 @@ def get_top_10_expensive_items():
         print(f"An error occurred: {e}")
 
 #update products data
-def update_product_in_category(category_name, product_id, name=None, price=None, stock=None):
+def update_product_in_category(db):
+    print("It is ready for you to update some products data...")
+    #prompt user to type in parameters in order to update product data
+    category_name = choose_category(categories)
+    product_id = input(f"Enter producr ID: ")
+    # Prepare a dictionary with fields that need to be updated
+    updates = {}
+    #update name
+    update_name = input("Do you want to update the product name? (yes/no): ").strip().lower()
+    if update_name == "yes":
+        name = input("Enter new product name: ").strip()
+
+    #update price
+    update_price = input("Do you want to update the product price? (yes/no): ").strip().lower()
+    if update_price == "yes":
+        try:
+            price = float(input("Enter new product price: "))
+            updates['price'] = price
+        except ValueError:
+            print("Invalid input! Make sure price is a number.")
+    #update stock
+    update_stock = input("Do you want to update the product stock (yes/no): ").strip().lower()
+    if update_stock == "yes":
+        try:
+            stock = int(input("Enter new product stock: "))
+            updates['stock'] = stock
+        except ValueError:
+            print("Invalid input! Make sure stock is an integer.")
+
     # Reference to the 'items' subcollection within the specified category
     product_ref = db.collection('products').document(category_name).collection('items').document(product_id)
-    
-    # Prepare a dictionary with only the fields that need to be updated
-    updates = {}
-    if name is not None:
-        updates['name'] = name
-    if price is not None:
-        updates['price'] = price
-    if stock is not None:
-        updates['stock'] = stock
-    
+        
     # Perform the update if there are fields to update
     if updates:
-        product_ref.update(updates)
-        print(f'Product {product_id} in {category_name} category updated successfully!')
-        print("-" * 30)
+        try:
+            product_ref.update(updates)
+            print(f'Product {product_id} in {category_name} category updated successfully!')
+            print("-" * 30)
+        except Exception as e:
+            print(f"Error updating product: {e}")
     else:
         print("No updates provided.")
 
 #update customer data
-def update_customer(customer_id, name=None, email=None):
-    # Prepare a dictionary with only the fields that need to be updated
+def update_customer(db):
+    print("It is ready for you to update some customers data...")
+    customer_id = input("Enter customer ID: ").strip()
+    # Prepare a dictionary with fields that need to be updated
     updates = {}
-    if name is not None:
+
+    #prompt user to type in parameters in order to update customer data
+    update_name = input("Do you want to update the customer name? (yes/no): ").strip().lower()
+    if update_name == "yes":
+        name = input("Enter new customer name: ").strip()
         updates['name'] = name
-    if email is not None:
+
+    update_email = input("Do you want to update the customer email? (yes/no): ").strip().lower()
+    if update_email == "yes":
+        email = input("Enter new customer email: ").strip()
         updates ['email'] = email
 
     # Perform the update if there are fields to update
     if updates:
-        db.collection('customers').document(customer_id).update(updates)
-        print(f"Customer {customer_id} updated successfully!")
-        print("-" * 30)
+        try:
+            db.collection('customers').document(customer_id).update(updates)
+            print(f"Customer {customer_id} updated successfully!")
+            print("-" * 30)
+        except Exception as e:
+            print(f"Error updating product: {e}")
     else:
         print("No updates provided.")
 
 #delete customer data 
-def delete_customer(customer_id):
+def delete_customer(db):
+    print("It is ready for you to delete some customers data...")
+    customer_id = input("Enter customer_id: ")
     db.collection('customers').document(customer_id).delete()
     print(f'customer {customer_id} is deleted successfully!')
     print("-" * 30)
 
 #delete products data
-def delete_product_from_category(category_name, product_id):
+def delete_product_from_category(db):
+    print("It is ready for you to delete some products data...")
+    category_name = choose_category(categories)
+    product_id = input("Enter product ID: ")
     # Reference to the 'items' subcollection within the specified category
     product_ref = db.collection('products').document(category_name).collection('items').document(product_id)
     product_ref.delete()
     print(f'Product {product_id} from {category_name} category deleted successfully!')
     print("-" * 30)
 
+
+# Notify stock alert for items in sub-collections
+def notify_stock_alert(results, changes, real_time):
+    for change in changes:
+        document_id = change.document.id
+        data = change.document.to_dict()
+        print(f"Change detected: {change.type.name} - {document_id}")
+        
+        if change.type.name == "ADDED":
+            print(f"\nItem {document_id} is out of stock!!!\n")
+        elif change.type.name == "REMOVED":
+            print(f"\nItem {document_id} has been restocked!\n")
+        elif change.type.name == "MODIFIED":
+            stock = data.get("stock", None)
+            if stock == 0:
+                print(f"\nItem {document_id} is now out of stock!!!\n")
+            elif stock is not None:
+                print(f"\nItem {document_id} stock updated to {stock}\n")
     
-def register_out_of_stock():
+# Register real-time listener for out-of-stock products in "items" sub-collections
+def register_out_of_stock(db):
+    print("Registering listener for out-of-stock items...")
+    
+    # Iterate over all categories in 'products' collection
+    categories = db.collection("products").get()
+    for category in categories:
+        category_name = category.id        
+        # Query the 'items' sub-collection for stock == 0
+        query = db.collection("products").document(category_name).collection("items").where("stock", "==", 0)
+        query.on_snapshot(notify_stock_alert)
+    
 
 def main():
-    categories = ["living_room", "bedroom", "bathroom", "kitchen", "dining_room"]
+    db = initialize_firestore()
     register_out_of_stock(db)
     choice = None
     while choice != "0":
@@ -228,7 +329,7 @@ def main():
         print("0> Exit")
         print("1> Add New Data")
         print("2> Retrieve Data")
-        print("3> Remove Data")
+        print("3> Delete Data")
         print("4> Update Data")
         choice = input(f"--- ")
         print()
@@ -241,102 +342,55 @@ def main():
             sub_choice = input(f"Choose a function: ")
             print()
             if sub_choice == "1":
-                category_name = choose_category(categories)
-                product_id = input(f"Enter producr ID: ")
-                name = input(f"Enter product name: ")
-                try:
-                    price = float(input("Enter product price: "))
-                    stock = int(input("Enter product stock: "))
-                    add_product_to_category(category_name, product_id, name, price, stock)
-                except ValueError:
-                    print("Invalid input! Make sure price is a number and stock is an integer.")
+                add_product_to_category(db)
             elif sub_choice =="2":
-                customer_id = input(f"Enter customer ID: ")
-                name = input(f"Enter customer name: ")
-                email = input(f"Enter customer email: ")
-                add_customer(customer_id, name, email)
+                add_customer(db)
             else:
                 print("Please choose again.")
+
         elif choice == "2":
             print("1. Retrieve data of a specific product")
             print("2. Retrieve data of products from a specific category")
             print("3. Retrieve data of products from all categories")
             print("4. Retrieve all customers data")
+            print("5. Get top-10 expensive product items")
             sub_choice = input(f"Choose a function: ")
             print()
             if sub_choice == "1":
-                get_product(category_name, product_id)
+                get_product(db)
             elif sub_choice == "2":
-                get_products_in_category(category_name)
+                get_products_in_category(db)
             elif sub_choice == "3":
-                get_all_products()
+                get_all_products(db)
             elif sub_choice == "4":
-                get_customers()
-
-
+                get_customers(db)
+            elif sub_choice =="5":
+                get_top_10_expensive_items(db)
 
         elif choice == "3":
+            print("1. Delete a customer")
+            print("2. Delete a product from a category")
+            sub_choice = input(f"Choose a function: ")
+            print()
+            if sub_choice == "1":
+                delete_customer(db)
+            elif sub_choice == "2":
+                delete_product_from_category(db)
 
         elif choice == "4":
-
+            print("1. Update a customer info")
+            print("2. Update a product info")
+            sub_choice = input(f"Choose a function: ")
+            print()
+            if sub_choice == "1":
+                update_customer(db)
+                merge = input("Do you want to mark this customer as a new customer? (yes/no): ")
+                if merge == "yes":
+                    merge_new_customer(db)
+            elif sub_choice == "2":
+                update_product_in_category(db)
 
 # Example usage
 if __name__ == '__main__':
     main()
 
-    # add a field to document "customer "
-    # merge_field_customer('U003')
-    # filter products data by >= 1000
-    # filter_products()
-    # order products data by price and stock descending
-    # order_products()
-    # print("\nProducts:")
-    # get_product("living_room", "lr1")
-    # get_products_in_category("living_room")
-    # get_all_products()
-    # print("\ncustomers:")
-    # get_customers()   
-
-    # Update data
-    # Update only the price of the product
-    # update_product_in_category("bathroom", "bt1", price=450)
-    # Update all fields
-    # update_product_in_category("bathroom", "bt1", name=" Luxury Bathroom Vanity", price=500, stock=5)
-
-    # update_customer('U001', {'name': 'Alice Smith'})
-
-    # Delete data
-    # delete_product_from_category("bathroom", "bt1")
-    # delete_customer('U003')
-
-
-                        # Living Room Products
-                    # add_product_to_category("living_room", "lr1", "Sofa", 800, 15)
-                    # add_product_to_category("living_room", "lr2", "Coffee Table", 150, 25)
-                    # add_product_to_category("living_room", "lr3", "TV Stand", 200, 10)
-                    # add_product_to_category("living_room", "lr4", "Bookshelf", 120, 8)
-                    # add_product_to_category("living_room", "lr5", "Armchair", 250, 12)
-                    # Bedroom Products
-                    # add_product_to_category("bedroom", "br1", "Bed Frame", 700, 20)
-                    # add_product_to_category("bedroom", "br2", "Nightstand", 90, 30)
-                    # add_product_to_category("bedroom", "br3", "Wardrobe", 500, 5)
-                    # add_product_to_category("bedroom", "br4", "Dresser", 300, 10)
-                    # add_product_to_category("bedroom", "br5", "Bedside Lamp", 40, 50)
-                    # Kitchen Products
-                    # add_product_to_category("kitchen", "kt1", "Dining Set", 900, 7)
-                    # add_product_to_category("kitchen", "kt2", "Refrigerator", 1200, 3)
-                    # add_product_to_category("kitchen", "kt3", "Microwave Oven", 200, 20)
-                    # add_product_to_category("kitchen", "kt4", "Kitchen Island", 600, 4)
-                    # add_product_to_category("kitchen", "kt5", "Bar Stool", 75, 18)
-                    #  Dining Room Products
-                    # add_product_to_category("dining_room", "dr1", "Dining Table", 700, 5)
-                    # add_product_to_category("dining_room", "dr2", "Dining Chair", 120, 30)
-                    # add_product_to_category("dining_room", "dr3", "Buffet Table", 500, 4)
-                    # add_product_to_category("dining_room", "dr4", "China Cabinet", 850, 3)
-                    # add_product_to_category("dining_room", "dr5", "Table Runner", 25, 40)
-                    # Bathroom Products
-                    # add_product_to_category("bathroom", "bt1", "Bathroom Vanity", 400, 8)
-                    # add_product_to_category("bathroom", "bt2", "Shower Curtain", 20, 60)
-                    # add_product_to_category("bathroom", "bt3", "Bathroom Mirror", 100, 15)
-                    # add_product_to_category("bathroom", "bt4", "Storage Cabinet", 150, 6)
-                    # add_product_to_category("bathroom", "bt5", "Towel Set", 35, 50)  
