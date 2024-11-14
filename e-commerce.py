@@ -3,7 +3,7 @@ from firebase_admin import credentials, firestore
 
 def initialize_firestore():
 # Initialize Firebase Admin SDK with my Service Account File
-    cred = credentials.Certificate("/Users/zhangying-macbookpro/Documents/BYU-Pathway/BYU_Idaho/fall 2024/cse310/jianjun-furniture-store-firebase-adminsdk-dja2z-de227bea56.json")
+    cred = credentials.Certificate("/Users/zhangying-macbookpro/Documents/BYU-Pathway/BYU_Idaho/fall 2024/cse310/jianjun-furniture-store-firebase-adminsdk-dja2z-b0b4079dde.json")
 
     firebase_admin.initialize_app(cred)
 
