@@ -4,7 +4,7 @@ This software is an e-commerce platform that integrates with a cloud database (F
 
 The purpose of this software is to gain hands-on experience with cloud databases, particularly Firestore, and to implement basic functionalities like data insertion, retrieval, modification, and deletion.
 
-[Software Demo Video](not done yet...)
+[Software Demo Video](https://www.youtube.com/watch?v=ux6JrsJsIDk)
 
 # Cloud Database
 
